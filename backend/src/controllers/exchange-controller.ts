@@ -20,7 +20,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     sendValidationError(res, parsedBody.error);
     return;
   }
-
   const { type, side, symbol, qty } = parsedBody.data;
   const price = type === "market" ? null : parsedBody.data.price;
 

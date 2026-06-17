@@ -21,7 +21,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ error: "Missing auth token" });
     return;
   }
-
   try {
     const payload = jwt.verify(token, env.jwtSecret) as TokenPayload;
     req.userId = payload.userId;
