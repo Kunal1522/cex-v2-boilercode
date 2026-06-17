@@ -2,7 +2,12 @@ import "dotenv/config";
 import { createClient } from "redis";
 import { env } from "./utils/env.js";
 import { create_order_handler } from "./controllers/orderbook_handler.js";
-import { depth_handler } from "./controllers/depth_handler.js";
+import {
+  balance_handler,
+  cancel_handler,
+  depth_handler,
+  fetch_order_handler,
+} from "./controllers/crud_handlers.js";
 
 export type EngineCommandType =
   | "create_order"
@@ -27,20 +32,19 @@ export interface EngineResponse {
 
 const brokerClient = createClient({ url: env.redisUrl }).on(
   "error",
-  (error:any) => {
+  (error: any) => {
     console.error("Redis broker client error", error);
   },
 );
 
 const responseClient = createClient({ url: env.redisUrl }).on(
   "error",
-  (error:any) => {
+  (error: any) => {
     console.error("Redis response client error", error);
   },
 );
 
 await Promise.all([brokerClient.connect(), responseClient.connect()]);
-
 
 async function sendResponse(
   responseQueue: string,
@@ -51,22 +55,25 @@ async function sendResponse(
 
 function handleEngineRequest(message: EngineRequest): unknown {
   // console.log("hi");
+  let res;
   if (message.type === "create_order") {
-    console.log("message reached");
-     const res=  create_order_handler(message);
-     console.log("resp",res);
-     return res;
+    res = create_order_handler(message);
+  } else if (message.type === "get_depth") {
+    res = depth_handler(message);
+  } else if (message.type === "get_user_balance") {
+    res = balance_handler(message);
+  } else if (message.type === "cancel_order") {
+    res = cancel_handler(message);
+  } else if (message.type === "get_order") {
+    res=fetch_order_handler(message);
+    console.log("hi");
+    console.log(res);
+    
+    // return res;
+  } else {
+    throw new Error("CHUP BSDK");
   }
-  else if(message.type==="get_depth"){
-   const res= depth_handler(message);
-   return res;
-  }
-  else if(message.type==="get_user_balance")
-  {
-
-  }
-  else 
-  throw new Error("TODO(student): implement this engine request type");
+  return res;
 }
 
 console.log(`Engine listening on Redis queue: ${env.incomingQueue}`);
